@@ -6,14 +6,18 @@ import (
 	"encoding/json"
 	"os"
 	"io"
+	"strconv"
+	"fmt"
 	// STEP 5-1: uncomment this line
 	// _ "github.com/mattn/go-sqlite3"
 )
 
 var errImageNotFound = errors.New("image not found")
+var errItemNotFound = errors.New("item not found")//追加4-5
+
 
 type Item struct {
-	ID   int    `db:"id" json:"-"`
+	ID   int    `db:"id" json:"id"`
 	Name string `db:"name" json:"name"`
 	// STEP 4-2: add a category field:
 	Category string `db:"category" json:"category"`
@@ -27,6 +31,7 @@ type Item struct {
 type ItemRepository interface {
 	Insert(ctx context.Context, item *Item) error
 	List(ctx context.Context) ([]Item, error)//商品一覧を取得するためのメソッドを追加
+	Get(ctx context.Context, id string) (*Item, error)
 }
 
 // itemRepository is an implementation of ItemRepository
@@ -140,4 +145,45 @@ func StoreImage(fileName string, image []byte) error {
     }
 
     return nil
+}
+
+// Get returns a specific item from the repository.
+func (i *itemRepository) Get(ctx context.Context, id string) (*Item, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	// 絶対パスを作成
+	filePath := cwd + "/" + i.fileName
+
+	// JSONファイルを開く
+	file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0755)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// JSONの中身を読み取る
+	var data ItemsData
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&data)
+	if err != nil && err != io.EOF {
+		return nil, err
+	}
+
+	// IDを整数に変換
+	itemID, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid item id: %s", id)
+	}
+
+	// 指定されたIDの商品を検索
+	for _, item := range data.Items {
+		if item.ID == itemID {
+			return &item, nil
+		}
+	}
+
+	return nil, errItemNotFound
 }

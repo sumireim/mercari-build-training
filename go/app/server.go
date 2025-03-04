@@ -47,6 +47,7 @@ func (s Server) Run() int {
 	mux.HandleFunc("POST /items", h.AddItem)
 	mux.HandleFunc("GET /items", h.GetItems)//GET /items エンドポイントのハンドラを追加
 	mux.HandleFunc("GET /images/{filename}", h.GetImage)
+	mux.HandleFunc("GET /items/{id}", h.GetItemDetail)//GET /items/<item_id>エンドポイントを作成
 
 	// start the server
 	slog.Info("http server started on", "port", s.Port)
@@ -326,6 +327,69 @@ func (s *Handlers) GetItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := GetItemsResponse{Items: items}
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+type GetItemDetailRequest struct {
+	ID string // path value
+}
+
+// parseGetItemDetailRequest parses and validates the request to get an item detail.
+func parseGetItemDetailRequest(r *http.Request) (*GetItemDetailRequest, error) {
+	req := &GetItemDetailRequest{
+		ID: r.PathValue("id"), // from path parameter
+	}
+
+	// validate the request
+	if req.ID == "" {
+		return nil, errors.New("item id is required")
+	}
+
+	return req, nil
+}
+
+// GetItemDetailResponse は商品詳細のレスポンス形式を定義
+type GetItemDetailResponse struct {
+	Name      string `json:"name"`
+	Category  string `json:"category"`
+	ImageName string `json:"image_name"`
+}
+
+// GetItemDetail is a handler to return a specific item for GET /items/{id} .
+func (s *Handlers) GetItemDetail(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	req, err := parseGetItemDetailRequest(r)
+	if err != nil {
+		slog.Warn("failed to parse get item detail request: ", "error", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// 商品の詳細情報を取得
+	item, err := s.itemRepo.Get(ctx, req.ID)
+	if err != nil {
+		if errors.Is(err, errItemNotFound) {
+			http.Error(w, "item not found", http.StatusNotFound)
+			return
+		}
+		slog.Error("failed to get item: ", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	//err = json.NewEncoder(w).Encode(item)
+	// レスポンス用の構造体に変換
+	resp := GetItemDetailResponse{
+		Name:      item.Name,
+		Category:  item.Category,
+		ImageName: item.ImageName,
+	}
+	//ここまで追加
+
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
