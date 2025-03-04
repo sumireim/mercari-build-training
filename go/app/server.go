@@ -46,9 +46,9 @@ func (s Server) Run() int {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", h.Hello)
 	mux.HandleFunc("POST /items", h.AddItem)
-	mux.HandleFunc("GET /items", h.GetItems)//GET /items エンドポイントのハンドラを追加
+	mux.HandleFunc("GET /items", h.GetItems) //GET /items エンドポイントのハンドラを追加
 	mux.HandleFunc("GET /images/{filename}", h.GetImage)
-	mux.HandleFunc("GET /items/{id}", h.GetItemDetail)//GET /items/<item_id>エンドポイントを作成
+	mux.HandleFunc("GET /items/{id}", h.GetItemDetail) //GET /items/<item_id>エンドポイントを作成
 
 	// start the server
 	slog.Info("http server started on", "port", s.Port)
@@ -82,9 +82,9 @@ func (s *Handlers) Hello(w http.ResponseWriter, r *http.Request) {
 }
 
 type AddItemRequest struct {
-	Name string `form:"name"`
+	Name     string `form:"name"`
 	Category string `form:"category"` // STEP 4-2: add a category field:
-	Image []byte `form:"image"` // STEP 4-4: add an image field
+	Image    []byte `form:"image"`    // STEP 4-4: add an image field
 }
 
 type AddItemResponse struct {
@@ -100,7 +100,7 @@ func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 	}
 
 	req := &AddItemRequest{
-		Name: r.FormValue("name"),
+		Name:     r.FormValue("name"),
 		Category: r.FormValue("category"),
 		// STEP 4-2: add a category field:
 	}
@@ -128,7 +128,7 @@ func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 	if req.Category == "" {
 		return nil, errors.New("category is required")
 	}
-	
+
 	// STEP 4-4: validate the image field
 	if len(req.Image) == 0 {
 		return nil, errors.New("image is required")
@@ -156,7 +156,7 @@ func (s *Handlers) AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := &Item{
-		Name: req.Name,
+		Name:     req.Name,
 		Category: req.Category,
 		// STEP 4-2: add a category field:
 		// STEP 4-4: add an image field
@@ -194,14 +194,14 @@ func (s *Handlers) AddItem(w http.ResponseWriter, r *http.Request) {
 // storeImage stores an image and returns the file path and an error if any.
 // this method calculates the hash sum of the image as a file name to avoid the duplication of a same file
 // and stores it in the image directory.
-//func (s *Handlers) storeImage(image []byte) (filePath string, err error) {
-    // STEP 4-4: add an implementation to store an image
-    // TODO:
-    // - calc hash sum
-    // - build image file path
-    // - check if the image already exists
-    // - store image
-    // - return the image file path
+// func (s *Handlers) storeImage(image []byte) (filePath string, err error) {
+// STEP 4-4: add an implementation to store an image
+// TODO:
+// - calc hash sum
+// - build image file path
+// - check if the image already exists
+// - store image
+// - return the image file path
 func (s *Handlers) storeImage(image []byte) (string, error) {
 	// default.jpgの存在確認
 	defaultImagePath := filepath.Join(s.imgDirPath, "default.jpg")
@@ -311,7 +311,7 @@ func (s *Handlers) buildImagePath(imageFileName string) (string, error) {
 	return imgPath, nil
 }
 
-//ist メソッドの実装を追加
+// ist メソッドの実装を追加
 type GetItemsResponse struct {
 	Items []Item `json:"items"`
 }
@@ -397,4 +397,5 @@ func (s *Handlers) GetItemDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
 //ここまで
