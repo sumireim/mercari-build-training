@@ -17,6 +17,7 @@ type Item struct {
 	Name string `db:"name" json:"name"`
 	// STEP 4-2: add a category field:
 	Category string `db:"category" json:"category"`
+	ImageName string `db:"image_name" json:"image_name"` // 画像ファイル名を保存するフィールド
 }
 
 // Please run `go generate ./...` to generate the mock implementation
@@ -25,7 +26,7 @@ type Item struct {
 //go:generate go run go.uber.org/mock/mockgen -source=$GOFILE -package=${GOPACKAGE} -destination=./mock_$GOFILE
 type ItemRepository interface {
 	Insert(ctx context.Context, item *Item) error
-	List(ctx context.Context) ([]Item, error)
+	List(ctx context.Context) ([]Item, error)//商品一覧を取得するためのメソッドを追加
 }
 
 // itemRepository is an implementation of ItemRepository
@@ -91,7 +92,7 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
 
     return nil
 }
-
+//List メソッドの実装を追加
 // List returns all items from the repository.
 func (i *itemRepository) List(ctx context.Context) ([]Item, error) {
 	cwd, err := os.Getwd()
