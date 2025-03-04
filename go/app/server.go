@@ -112,6 +112,12 @@ func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 	}
 	defer file.Close()
 
+	// 画像がjpgか確認
+	if !strings.HasSuffix(strings.ToLower(header.Filename), ".jpg") && 
+	   !strings.HasSuffix(strings.ToLower(header.Filename), ".jpeg") {
+		return nil, errors.New("only .jpg or .jpeg files are allowed")
+	}
+
 	// 画像データを読み込む
 	imageData := make([]byte, header.Size)
 	_, err = file.Read(imageData)
@@ -203,12 +209,6 @@ func (s *Handlers) AddItem(w http.ResponseWriter, r *http.Request) {
 // - store image
 // - return the image file path
 func (s *Handlers) storeImage(image []byte) (string, error) {
-	// default.jpgの存在確認
-	defaultImagePath := filepath.Join(s.imgDirPath, "default.jpg")
-	if _, err := os.Stat(defaultImagePath); os.IsNotExist(err) {
-		return "", fmt.Errorf("default.jpg not found in images directory")
-	}
-
 	// SHA-256ハッシュを計算
 	hasher := sha256.New()
 	_, err := hasher.Write(image)
@@ -217,12 +217,6 @@ func (s *Handlers) storeImage(image []byte) (string, error) {
 	}
 	hashSum := hex.EncodeToString(hasher.Sum(nil))
 	fileName := hashSum + ".jpg"
-
-	// 画像ディレクトリが存在しない場合は作成
-	/*err = os.MkdirAll(s.imgDirPath, 0755)
-	if err != nil {
-		return "", fmt.Errorf("failed to create image directory: %w", err)
-	}*/
 
 	// 画像ファイルのパスを作成
 	filePath := filepath.Join(s.imgDirPath, fileName)

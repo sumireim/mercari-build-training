@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	// STEP 5-1: uncomment this line
 	// _ "github.com/mattn/go-sqlite3"
@@ -37,11 +38,22 @@ type ItemRepository interface {
 type itemRepository struct {
 	// fileName is the path to the JSON file storing items.
 	fileName string
+	// filePath is the absolute path to the JSON file
+	filePath string
 }
 
 // NewItemRepository creates a new itemRepository.
 func NewItemRepository() ItemRepository {
-	return &itemRepository{fileName: "items.json"}
+	cwd, err := os.Getwd()
+	if err != nil {
+		// エラーハンドリングを簡略化、パニックを使用
+		panic(fmt.Errorf("failed to get working directory: %w", err))
+	}
+	fileName := "items.json"
+	return &itemRepository{
+		fileName: fileName,
+		filePath: filepath.Join(cwd, fileName),
+	}
 }
 
 // JSONファイルの内容をパースするための構造体
@@ -51,20 +63,16 @@ type ItemsData struct {
 
 // Insert inserts an item into the repository.
 func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
-	// STEP 4-1: add an implementation to store an item
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
+    // STEP 4-1: add an implementation to store an item
+	// まずファイルの存在確認
+	if _, err := os.Stat(i.filePath); os.IsNotExist(err) {
+		return fmt.Errorf("items file not found: %w", err)
 	}
 
-	// 絶対パスを作成
-	filePath := cwd + "/" + i.fileName
-
-	// JSONファイルを開く (なければ作成)
-	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0755)
+	// JSONファイルを開く//読み書き
+	file, err := os.OpenFile(i.filePath, os.O_RDWR, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open items file: %w", err)
 	}
 	defer file.Close()
 
@@ -97,21 +105,15 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
 	return nil
 }
 
-// List メソッドの実装を追加
 // List returns all items from the repository.
 func (i *itemRepository) List(ctx context.Context) ([]Item, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	// 絶対パスを作成
-	filePath := cwd + "/" + i.fileName
-
 	// JSONファイルを開く
-	file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0755)
+	file, err := os.OpenFile(i.filePath, os.O_RDONLY, 0644)
 	if err != nil {
-		return nil, err
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("items file not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to open items file: %w", err)
 	}
 	defer file.Close()
 
@@ -149,18 +151,13 @@ func StoreImage(fileName string, image []byte) error {
 
 // Get returns a specific item from the repository.
 func (i *itemRepository) Get(ctx context.Context, id string) (*Item, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	// 絶対パスを作成
-	filePath := cwd + "/" + i.fileName
-
 	// JSONファイルを開く
-	file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0755)
+	file, err := os.OpenFile(i.filePath, os.O_RDONLY, 0644)
 	if err != nil {
-		return nil, err
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("items file not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to open items file: %w", err)
 	}
 	defer file.Close()
 
