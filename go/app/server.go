@@ -90,19 +90,23 @@ type AddItemRequest struct {
 	Image    []byte `form:"image"`    // STEP 4-4: add an image field
 }
 
+type AddItemResponse struct {
+	Message string `json:"message"`
+}
 
 // parseAddItemRequest parses and validates the request to add an item.
 func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
-	// マルチパートフォームを解析（最大32MBまで）
-	err := r.ParseMultipartForm(32 << 20)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse multipart form: %w", err)
-	}
 
 	req := &AddItemRequest{
 		Name:     r.FormValue("name"),
 		Category: r.FormValue("category"),
 		// STEP 4-2: add a category field:
+	}
+
+	// make sure to parse the multipart form first
+	err := r.ParseMultipartForm(32 << 20)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse multipart form: %w", err)
 	}
 	// validate the request
 	// 画像ファイルを取得
