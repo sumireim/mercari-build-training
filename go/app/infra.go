@@ -43,17 +43,33 @@ type itemRepository struct {
 }
 
 // NewItemRepository creates a new itemRepository.
-func NewItemRepository() ItemRepository {
+func NewItemRepository() (ItemRepository, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		// エラーハンドリングを簡略化、パニックを使用
-		panic(fmt.Errorf("failed to get working directory: %w", err))
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
 	}
 	fileName := "items.json"
+	filePath := filepath.Join(cwd, fileName)
+
+	// ファイルが存在しない場合は新規作成
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		file, err := os.Create(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create items file: %w", err)
+		}
+		defer file.Close()
+
+		// 初期データを書き込む
+		initialData := ItemsData{Items: []Item{}}
+		if err := json.NewEncoder(file).Encode(initialData); err != nil {
+			return nil, fmt.Errorf("failed to write initial data: %w", err)
+		}
+	}
+
 	return &itemRepository{
 		fileName: fileName,
-		filePath: filepath.Join(cwd, fileName),
-	}
+		filePath: filePath,
+	}, nil
 }
 
 // JSONファイルの内容をパースするための構造体
@@ -63,7 +79,7 @@ type ItemsData struct {
 
 // Insert inserts an item into the repository.
 func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
-    // STEP 4-1: add an implementation to store an item
+	// STEP 4-2: add an implementation to store an item
 	// まずファイルの存在確認
 	if _, err := os.Stat(i.filePath); os.IsNotExist(err) {
 		return fmt.Errorf("items file not found: %w", err)

@@ -39,7 +39,11 @@ func (s Server) Run() int {
 	// STEP 5-1: set up the database connection
 
 	// set up handlers
-	itemRepo := NewItemRepository()
+	itemRepo, err := NewItemRepository()
+	if err != nil {
+		slog.Error("failed to create item repository: ", "error", err)
+		return 1
+	}
 	h := &Handlers{imgDirPath: s.ImageDirPath, itemRepo: itemRepo}
 
 	// set up routes
@@ -52,7 +56,7 @@ func (s Server) Run() int {
 
 	// start the server
 	slog.Info("http server started on", "port", s.Port)
-	err := http.ListenAndServe(":"+s.Port, simpleCORSMiddleware(simpleLoggerMiddleware(mux), frontURL, []string{"GET", "HEAD", "POST", "OPTIONS"}))
+	err = http.ListenAndServe(":"+s.Port, simpleCORSMiddleware(simpleLoggerMiddleware(mux), frontURL, []string{"GET", "HEAD", "POST", "OPTIONS"}))
 	if err != nil {
 		slog.Error("failed to start server: ", "error", err)
 		return 1
@@ -113,9 +117,8 @@ func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 	defer file.Close()
 
 	// 画像がjpgか確認
-	if !strings.HasSuffix(strings.ToLower(header.Filename), ".jpg") && 
-	   !strings.HasSuffix(strings.ToLower(header.Filename), ".jpeg") {
-		return nil, errors.New("only .jpg or .jpeg files are allowed")
+	if !strings.HasSuffix(strings.ToLower(header.Filename), ".jpg") {
+		return nil, errors.New("only .jpg files are allowed")
 	}
 
 	// 画像データを読み込む
