@@ -63,7 +63,8 @@ type ItemsData struct {
 
 // Insert inserts an item into the repository.
 func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
-    // STEP 4-1: add an implementation to store an item
+
+  // STEP 4-2: add an implementation to store an item
 	// まずファイルの存在確認
 	if _, err := os.Stat(i.filePath); os.IsNotExist(err) {
 		return fmt.Errorf("items file not found: %w", err)
@@ -101,6 +102,7 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
 	if err != nil {
 		return err
 	}
+
 
 	return nil
 }
