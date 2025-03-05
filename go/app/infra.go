@@ -82,10 +82,20 @@ type ItemsData struct {
 // Insert inserts an item into the repository.
 func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
 	// STEP 4-2: add an implementation to store an item
-	// まずファイルの存在確認
+	// check if the file exists
 	if _, err := os.Stat(i.filePath); os.IsNotExist(err) {
-		return fmt.Errorf("items file not found: %w", err)
-	}
+        file, err := os.Create(i.filePath)
+        if err != nil {
+            return fmt.Errorf("failed to create items file: %w", err)
+        }
+        defer file.Close()
+
+        // initialize the file 
+        initialData := ItemsData{Items: []Item{}}
+        if err := json.NewEncoder(file).Encode(initialData); err != nil {
+            return fmt.Errorf("failed to write initial data: %w", err)
+        }
+    }
 
 	// JSONファイルを開く//読み書き
 	file, err := os.OpenFile(i.filePath, os.O_RDWR, 0644)
@@ -127,15 +137,27 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
 //追加
 // List returns all items from the repository.
 func (i *itemRepository) List(ctx context.Context) ([]Item, error) {
+	
+	// check if the file exists
+    if _, err := os.Stat(i.filePath); os.IsNotExist(err) {
+        file, err := os.Create(i.filePath)
+        if err != nil {
+            return nil, fmt.Errorf("failed to create items file: %w", err)
+        }
+        defer file.Close()
+
+        // initialize the file 
+        initialData := ItemsData{Items: []Item{}}
+        if err := json.NewEncoder(file).Encode(initialData); err != nil {
+            return nil, fmt.Errorf("failed to write initial data: %w", err)
+        }
+    }
 	// JSONファイルを開く
-	file, err := os.OpenFile(i.filePath, os.O_RDONLY, 0644)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("items file not found: %w", err)
-		}
-		return nil, fmt.Errorf("failed to open items file: %w", err)
-	}
-	defer file.Close()
+    file, err := os.OpenFile(i.filePath, os.O_RDONLY, 0644)
+    if err != nil {
+        return nil, fmt.Errorf("failed to open items file: %w", err)
+    }
+    defer file.Close()
 
 	// JSONの中身を読み取る
 	var data ItemsData
@@ -172,6 +194,21 @@ func StoreImage(fileName string, image []byte) error {
 //追加
 // Get returns a specific item from the repository.
 func (i *itemRepository) Get(ctx context.Context, id string) (*Item, error) {
+	// check if the file exists
+    if _, err := os.Stat(i.filePath); os.IsNotExist(err) {
+        file, err := os.Create(i.filePath)
+        if err != nil {
+            return nil, fmt.Errorf("failed to create items file: %w", err)
+        }
+        defer file.Close()
+
+        // initialize the file 
+        initialData := ItemsData{Items: []Item{}}
+        if err := json.NewEncoder(file).Encode(initialData); err != nil {
+            return nil, fmt.Errorf("failed to write initial data: %w", err)
+        }
+    }
+
 	// JSONファイルを開く
 	file, err := os.OpenFile(i.filePath, os.O_RDONLY, 0644)
 	if err != nil {

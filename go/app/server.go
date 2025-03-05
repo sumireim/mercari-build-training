@@ -295,8 +295,8 @@ func (s *Handlers) buildImagePath(imageFileName string) (string, error) {
 	}
 
 	// validate the image suffix
-	if !strings.HasSuffix(imgPath, ".jpg") && !strings.HasSuffix(imgPath, ".jpeg") {
-		return "", fmt.Errorf("image path does not end with .jpg or .jpeg: %s", imgPath)
+	if !strings.HasSuffix(imgPath, ".jpg") {
+		return "", fmt.Errorf("image path does not end with .jpg: %s", imgPath)
 	}
 
 	// check if the image exists
