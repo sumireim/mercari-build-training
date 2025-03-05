@@ -13,15 +13,17 @@ import (
 	// _ "github.com/mattn/go-sqlite3"
 )
 
+//custom error
 var errImageNotFound = errors.New("image not found")
-var errItemNotFound = errors.New("item not found") //追加4-5
+var errItemNotFound = errors.New("item not found") 
 
 type Item struct {
 	ID   int    `db:"id" json:"id"`
 	Name string `db:"name" json:"name"`
 	// STEP 4-2: add a category field:
 	Category  string `db:"category" json:"category"`
-	ImageName string `db:"image_name" json:"image_name"` // 画像ファイル名を保存するフィールド
+	// STEP 4-4: add an image_name field:
+	ImageName string `db:"image_name" json:"image_name"` 
 }
 
 // Please run `go generate ./...` to generate the mock implementation
@@ -29,9 +31,9 @@ type Item struct {
 //
 //go:generate go run go.uber.org/mock/mockgen -source=$GOFILE -package=${GOPACKAGE} -destination=./mock_$GOFILE
 type ItemRepository interface {
-	Insert(ctx context.Context, item *Item) error
-	List(ctx context.Context) ([]Item, error) //商品一覧を取得するためのメソッドを追加
-	Get(ctx context.Context, id string) (*Item, error)
+	Insert(ctx context.Context, item *Item) error //insert an item
+	List(ctx context.Context) ([]Item, error) //get all items
+	Get(ctx context.Context, id string) (*Item, error) //get an item by id
 }
 
 // itemRepository is an implementation of ItemRepository
@@ -51,7 +53,7 @@ func NewItemRepository() (ItemRepository, error) {
 	fileName := "items.json"
 	filePath := filepath.Join(cwd, fileName)
 
-	// ファイルが存在しない場合は新規作成
+	// check if the file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		file, err := os.Create(filePath)
 		if err != nil {
@@ -59,7 +61,7 @@ func NewItemRepository() (ItemRepository, error) {
 		}
 		defer file.Close()
 
-		// 初期データを書き込む
+		// write initial data
 		initialData := ItemsData{Items: []Item{}}
 		if err := json.NewEncoder(file).Encode(initialData); err != nil {
 			return nil, fmt.Errorf("failed to write initial data: %w", err)
@@ -71,7 +73,7 @@ func NewItemRepository() (ItemRepository, error) {
 		filePath: filePath,
 	}, nil
 }
-
+//追加
 // JSONファイルの内容をパースするための構造体
 type ItemsData struct {
 	Items []Item `json:"items"`
@@ -121,6 +123,7 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
 	return nil
 }
 
+//追加
 // List returns all items from the repository.
 func (i *itemRepository) List(ctx context.Context) ([]Item, error) {
 	// JSONファイルを開く
@@ -165,6 +168,7 @@ func StoreImage(fileName string, image []byte) error {
 	return nil
 }
 
+//追加
 // Get returns a specific item from the repository.
 func (i *itemRepository) Get(ctx context.Context, id string) (*Item, error) {
 	// JSONファイルを開く

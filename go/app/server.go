@@ -27,9 +27,8 @@ func (s Server) Run() int {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	slog.SetDefault(logger)
 	// STEP 4-6: set the log level to DEBUG
-	//slog.SetLogLoggerLevel(slog.LevelInfo)
 	slog.SetLogLoggerLevel(slog.LevelDebug)
-
+	
 	// set up CORS settings
 	frontURL, found := os.LookupEnv("FRONT_URL")
 	if !found {
@@ -91,9 +90,6 @@ type AddItemRequest struct {
 	Image    []byte `form:"image"`    // STEP 4-4: add an image field
 }
 
-type AddItemResponse struct {
-	Message string `json:"message"`
-}
 
 // parseAddItemRequest parses and validates the request to add an item.
 func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
@@ -308,11 +304,13 @@ func (s *Handlers) buildImagePath(imageFileName string) (string, error) {
 	return imgPath, nil
 }
 
+//追加
 // ist メソッドの実装を追加
 type GetItemsResponse struct {
 	Items []Item `json:"items"`
 }
 
+//追加
 // GetItems is a handler to return a list of items for GET /items .
 func (s *Handlers) GetItems(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -332,10 +330,12 @@ func (s *Handlers) GetItems(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//追加
 type GetItemDetailRequest struct {
 	ID string // path value
 }
 
+//追加
 // parseGetItemDetailRequest parses and validates the request to get an item detail.
 func parseGetItemDetailRequest(r *http.Request) (*GetItemDetailRequest, error) {
 	req := &GetItemDetailRequest{
@@ -350,6 +350,7 @@ func parseGetItemDetailRequest(r *http.Request) (*GetItemDetailRequest, error) {
 	return req, nil
 }
 
+//追加
 // GetItemDetailResponse は商品詳細のレスポンス形式を定義
 type GetItemDetailResponse struct {
 	Name      string `json:"name"`
@@ -357,6 +358,7 @@ type GetItemDetailResponse struct {
 	ImageName string `json:"image_name"`
 }
 
+//追加
 // GetItemDetail is a handler to return a specific item for GET /items/{id} .
 func (s *Handlers) GetItemDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
