@@ -17,7 +17,7 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-	imgDirPath := filepath.Join(currentDir, "../../images")
+	imgDirPath := filepath.Join(currentDir, "images")
 	//追加ここまで
 
 	// This is the entry point of the application.
