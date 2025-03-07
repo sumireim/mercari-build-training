@@ -157,10 +157,18 @@ func (s *Handlers) AddItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get category ID from category name
+	categoryID, err := s.itemRepo.GetCategoryID(ctx, req.Category)
+	if err != nil {
+		slog.Error("failed to get category id: ", "error", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	item := &Item{
-		Name:      req.Name,
-		Category:  req.Category,
-		ImageName: fileName,
+		Name:       req.Name,
+		CategoryID: categoryID,
+		ImageName:  fileName,
 	}
 
 	err = s.itemRepo.Insert(ctx, item)
@@ -317,12 +325,12 @@ func (s *Handlers) GetItems(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetItemDetailRequest defines the request format for getting item details
+// request format for getting item details
 type GetItemDetailRequest struct {
 	ID string // path value
 }
 
-// parseGetItemDetailRequest parses and validates the request to get an item detail.
+// parses and validates the request to get an item detail.
 func parseGetItemDetailRequest(r *http.Request) (*GetItemDetailRequest, error) {
 	req := &GetItemDetailRequest{
 		ID: r.PathValue("id"), // from path parameter
@@ -384,6 +392,11 @@ type SearchItemsRequest struct {
 	Keyword string // query value
 }
 
+// response format for search items
+type SearchItemsResponse struct {
+    Items []GetItemDetailResponse `json:"items"`
+}
+
 // get the keyword from the request
 func parseSearchItemsRequest(r *http.Request) (*SearchItemsRequest, error) {
 	keyword := r.URL.Query().Get("keyword")
@@ -426,11 +439,9 @@ func (s *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// return the list of items containing the given keyword
-	resp := struct {
-		Items []GetItemDetailResponse `json:"items"`
-	}{
-		Items: respItems,
-	}
+	resp := SearchItemsResponse{
+        Items: respItems,
+    }
 	
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
