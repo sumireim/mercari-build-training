@@ -176,7 +176,7 @@ func (i *itemRepository) Search(ctx context.Context, keyword string) ([]Item, er
     `, "%"+keyword+"%")
 }
 
-// GetCategoryID returns the category ID for a given category name
+// returns the category ID for a given category name
 func (i *itemRepository) GetCategoryID(ctx context.Context, categoryName string) (int, error) {
 	var id int
 	err := i.db.QueryRowContext(ctx, "SELECT id FROM categories WHERE name = ?", categoryName).Scan(&id)
