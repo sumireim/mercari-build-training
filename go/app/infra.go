@@ -103,15 +103,20 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
 	// 新しいアイテムを追加
 	data.Items = append(data.Items, *item)
 
-	// ファイルを再度開いて内容をリセット
-	file.Seek(0, 0)
-	file.Truncate(0)
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to seek to start of file: %w", err)
+	}
+	
+	err = file.Truncate(0)
+	if err != nil {
+		return fmt.Errorf("failed to truncate file: %w", err)
+	}
 
 	// 更新されたアイテムリストを書き込む
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ") // 見やすくする
 	err = encoder.Encode(data)
-	//err = json.NewEncoder(file).Encode(items)
 	if err != nil {
 		return err
 	}
@@ -140,27 +145,6 @@ func (i *itemRepository) List(ctx context.Context) ([]Item, error) {
 	}
 
 	return data.Items, nil
-}
-
-// StoreImage stores an image and returns an error if any.
-// This package doesn't have a related interface for simplicity.
-func StoreImage(fileName string, image []byte) error {
-	// STEP 4-4: add an implementation to store an image
-
-	// ファイルを書き込みモードで開く
-	file, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// 画像データを書き込む
-	_, err = file.Write(image)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 //追加
