@@ -2,20 +2,24 @@ package app
 
 import (
 	"context"
-	"encoding/json"
+	//"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"os"
+	//"io"
+	//"os"
 	"path/filepath"
-	"strconv"
+	//"strconv"
 	// STEP 5-1: uncomment this line
-	// _ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3"
+	"database/sql"
 )
 
 //custom error
-var errImageNotFound = errors.New("image not found")
-var errItemNotFound = errors.New("item not found") 
+var (
+    errImageNotFound = errors.New("image not found")
+    errItemNotFound  = errors.New("item not found")
+    errInvalidInput  = errors.New("invalid input")
+)
 
 type Item struct {
 	ID   int    `db:"id" json:"id"`
@@ -34,153 +38,136 @@ type ItemRepository interface {
 	Insert(ctx context.Context, item *Item) error //insert an item
 	List(ctx context.Context) ([]Item, error) //get all items
 	Get(ctx context.Context, id string) (*Item, error) //get an item by id
+	Search(ctx context.Context, keyword string) ([]Item, error) //search items by keyword
+	Close() error //close the database connection
+	
 }
 
 // itemRepository is an implementation of ItemRepository
 type itemRepository struct {
 	// fileName is the path to the JSON file storing items.
-	fileName string
+	//fileName string
 	// filePath is the absolute path to the JSON file
-	filePath string
+	//filePath string
+	db *sql.DB
 }
 
 // NewItemRepository creates a new itemRepository.
 func NewItemRepository() (ItemRepository, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get working directory: %w", err)
-	}
-	fileName := "items.json"
-	filePath := filepath.Join(cwd, fileName)
+	dbPath := filepath.Join("db", "mercari.sqlite3")
+    db, err := sql.Open("sqlite3", dbPath)
+    if err != nil {
+        return nil, fmt.Errorf("failed to open database: %w", err)
+    }
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(20)
 
-	// check if the file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		file, err := os.Create(filePath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create items file: %w", err)
-		}
-		defer file.Close()
-
-		// write initial data
-		initialData := ItemsData{Items: []Item{}}
-		if err := json.NewEncoder(file).Encode(initialData); err != nil {
-			return nil, fmt.Errorf("failed to write initial data: %w", err)
-		}
-	}
+    // check if the database is connected
+    if err = db.Ping(); err != nil {
+		db.Close()
+        return nil, fmt.Errorf("failed to ping database: %w", err)
+    }
 
 	return &itemRepository{
-		fileName: fileName,
-		filePath: filePath,
+		db: db,
 	}, nil
 }
-//追加
-// JSONファイルの内容をパースするための構造体
-type ItemsData struct {
-	Items []Item `json:"items"`
+
+func (i *itemRepository) Close() error {
+    return i.db.Close()
+}
+
+// common query function
+func (i *itemRepository) queryItems(ctx context.Context, query string, args ...interface{}) ([]Item, error) {
+    rows, err := i.db.QueryContext(ctx, query, args...)
+    if err != nil {
+        return nil, fmt.Errorf("failed to query items: %w", err)
+    }
+    defer rows.Close()
+
+    var items []Item
+    for rows.Next() {
+        var item Item
+        if err := rows.Scan(&item.ID, &item.Name, &item.Category, &item.ImageName); err != nil {
+            return nil, fmt.Errorf("failed to scan item: %w", err)
+        }
+        items = append(items, item)
+    }
+
+    if err = rows.Err(); err != nil {
+        return nil, fmt.Errorf("error during iteration: %w", err)
+    }
+
+    return items, nil
 }
 
 // Insert inserts an item into the repository.
 func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
-	// STEP 4-2: add an implementation to store an item
+    if item == nil {
+        return errInvalidInput
+    }
 
-	// open the JSON file
-	file, err := os.OpenFile(i.filePath, os.O_RDWR, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open items file: %w", err)
-	}
-	defer file.Close()
+    stmt, err := i.db.PrepareContext(ctx, `
+        INSERT INTO items (name, category, image_name)
+        VALUES (?, ?, ?)
+    `)
+    if err != nil {
+        return fmt.Errorf("failed to prepare statement: %w", err)
+    }
+    defer stmt.Close()
 
-	// read the content of the JSON file
-	var data ItemsData
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil && err != io.EOF {
-		return err
-	}
-	// IDを設定
-	item.ID = len(data.Items) + 1
+    result, err := stmt.ExecContext(ctx, item.Name, item.Category, item.ImageName)
+    if err != nil {
+        return fmt.Errorf("failed to insert item: %w", err)
+    }
 
-	// 新しいアイテムを追加
-	data.Items = append(data.Items, *item)
+    id, err := result.LastInsertId()
+    if err != nil {
+        return fmt.Errorf("failed to get last insert id: %w", err)
+    }
+    item.ID = int(id)
 
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		return fmt.Errorf("failed to seek to start of file: %w", err)
-	}
-	
-	err = file.Truncate(0)
-	if err != nil {
-		return fmt.Errorf("failed to truncate file: %w", err)
-	}
-
-	// 更新されたアイテムリストを書き込む
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ") // 見やすくする
-	err = encoder.Encode(data)
-	if err != nil {
-		return err
-	}
-
-
-	return nil
+    return nil
 }
 
-//追加
 // List returns all items from the repository.
 func (i *itemRepository) List(ctx context.Context) ([]Item, error) {
-	
-	// open the JSON file
-    file, err := os.OpenFile(i.filePath, os.O_RDONLY, 0644)
-    if err != nil {
-        return nil, fmt.Errorf("failed to open items file: %w", err)
-    }
-    defer file.Close()
-
-	// read the content of the JSON file
-	var data ItemsData
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
-
-	return data.Items, nil
+    return i.queryItems(ctx, "SELECT id, name, category, image_name FROM items")
 }
 
-//追加
 // Get returns a specific item from the repository.
 func (i *itemRepository) Get(ctx context.Context, id string) (*Item, error) {
 
-	// open the JSON file
-	file, err := os.OpenFile(i.filePath, os.O_RDONLY, 0644)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("items file not found: %w", err)
-		}
-		return nil, fmt.Errorf("failed to open items file: %w", err)
-	}
-	defer file.Close()
+	if id == "" {
+        return nil, errInvalidInput
+    }
 
-	// read the content of the JSON file
-	var data ItemsData
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&data)
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
+    var item Item
+    err := i.db.QueryRowContext(ctx, 
+        "SELECT id, name, category, image_name FROM items WHERE id = ?", 
+        id,
+    ).Scan(&item.ID, &item.Name, &item.Category, &item.ImageName)
 
-	// IDを整数に変換
-	itemID, err := strconv.Atoi(id)
-	if err != nil {
-		return nil, fmt.Errorf("invalid item id: %s", id)
-	}
+    if err == sql.ErrNoRows {
+        return nil, errItemNotFound
+    }
+    if err != nil {
+        return nil, fmt.Errorf("failed to get item: %w", err)
+    }
 
-	// 指定されたIDの商品を検索
-	for _, item := range data.Items {
-		if item.ID == itemID {
-			return &item, nil
-		}
-	}
+    return &item, nil
 
-	return nil, errItemNotFound
+}
+
+// Search searches items containing the given keyword in their name.
+func (i *itemRepository) Search(ctx context.Context, keyword string) ([]Item, error) {
+	// search items containing the given keyword in their name
+	if keyword == "" {
+        return nil, errInvalidInput
+    }
+
+    return i.queryItems(ctx, 
+        "SELECT id, name, category, image_name FROM items WHERE name LIKE ?", 
+        "%"+keyword+"%",
+    )
 }
