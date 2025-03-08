@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/mock/gomock"
 	"encoding/json"
+	"errors"
 )
 
 func TestParseAddItemRequest(t *testing.T) {
@@ -141,6 +142,14 @@ func TestAddItem(t *testing.T) {
 			},
 			injector: func(m *MockItemRepository) {
 				// STEP 6-3: define mock expectation
+				item := Item{
+					Name:       "used iPhone 16e",
+					Category:   "phone",
+					ImageName:  "some-image-hash.jpg",
+				}
+				m.EXPECT().Insert(gomock.Any(), gomock.Any()).Return(nil)
+				m.EXPECT().GetCategoryID(gomock.Any(), gomock.Any()).Return(1, nil)
+				m.EXPECT().List(gomock.Any()).Return([]Item{item}, nil)
 				// succeeded to insert
 			},
 			wants: wants{
@@ -154,6 +163,8 @@ func TestAddItem(t *testing.T) {
 			},
 			injector: func(m *MockItemRepository) {
 				// STEP 6-3: define mock expectation
+				m.EXPECT().Insert(gomock.Any(), gomock.Any()).Return(errors.New("failed to insert"))
+				m.EXPECT().GetCategoryID(gomock.Any(), gomock.Any()).Return(1, nil)
 				// failed to insert
 			},
 			wants: wants{
@@ -170,7 +181,7 @@ func TestAddItem(t *testing.T) {
 
 			mockIR := NewMockItemRepository(ctrl)
 			tt.injector(mockIR)
-			h := &Handlers{itemRepo: mockIR}
+			h := &Handlers{imgDirPath: "../images", itemRepo: mockIR}
 
 			values := url.Values{}
 			for k, v := range tt.args {
