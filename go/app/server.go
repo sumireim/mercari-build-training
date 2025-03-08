@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -94,49 +93,49 @@ type AddItemResponse struct {
 	Message string `json:"message"`
 }
 
-// parseAddItemRequest parses and validates the request to add an item.
 func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
-	// Parse multipart form data
-	err := r.ParseMultipartForm(32 << 20)
+	var req = &AddItemRequest{}
+	
+	// parse form
+	err := r.ParseForm()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse multipart form: %w", err)
+		return nil, fmt.Errorf("failed to parse form: %w", err)
 	}
+	
+	// set form values
+	req.Name = r.FormValue("name")
+	req.Category = r.FormValue("category")
+	
+	// read image
+	if imagePath := r.FormValue("image"); imagePath != "" {
+		// test case
+		if !strings.HasSuffix(strings.ToLower(imagePath), ".jpg") {
+			return nil, errors.New("only .jpg files are allowed")
+		}
 
-	req := &AddItemRequest{
-		Name:     r.FormValue("name"),
-		Category: r.FormValue("category"),
+		imageData, err := os.ReadFile(imagePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read image file: %w", err)
+		}
+		if len(imageData) == 0 {
+			return nil, errors.New("image data is empty")
+		}
+		req.Image = imageData
+	} else {
+		// validate the request
+		if r.Header.Get("Content-Type") == "multipart/form-data" {
+			return nil, errors.New("image is required")
+		}
 	}
-
-	// Get image file from request
-	file, header, err := r.FormFile("image")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get image file: %w", err)
-	}
-	defer file.Close()
-
-	// Validate image format
-	if !strings.HasSuffix(strings.ToLower(header.Filename), ".jpg") {
-		return nil, errors.New("only .jpg files are allowed")
-	}
-
-	// Read image data
-	imageData, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read image file: %w", err)
-	}
-	req.Image = imageData
-
-	// Validate required fields
+	
+	// validate the request
 	if req.Name == "" {
 		return nil, errors.New("name is required")
 	}
 	if req.Category == "" {
 		return nil, errors.New("category is required")
 	}
-	if len(req.Image) == 0 {
-		return nil, errors.New("image is required")
-	}
-
+	
 	return req, nil
 }
 

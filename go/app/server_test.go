@@ -6,13 +6,18 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-
+	"os"
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/mock/gomock"
 )
 
 func TestParseAddItemRequest(t *testing.T) {
 	t.Parallel()
+
+	imageBytes, err := os.ReadFile("../images/default.jpg")
+	if err != nil {
+		t.Fatalf("failed to read image file: %v", err)
+	}
 
 	type wants struct {
 		req *AddItemRequest
@@ -26,13 +31,15 @@ func TestParseAddItemRequest(t *testing.T) {
 	}{
 		"ok: valid request": {
 			args: map[string]string{
-				"name":     "", // fill here
-				"category": "", // fill here
+				"name":     "jaket_test",
+				"category": "fashion_test",
+				"image":    "../images/default.jpg",
 			},
 			wants: wants{
 				req: &AddItemRequest{
-					Name: "", // fill here
-					// Category: "", // fill here
+					Name:     "jaket_test",
+					Category: "fashion_test",
+					Image:    imageBytes,
 				},
 				err: false,
 			},
