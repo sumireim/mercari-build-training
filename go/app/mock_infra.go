@@ -84,6 +84,21 @@ func (mr *MockItemRepositoryMockRecorder) GetCategoryID(ctx, categoryName any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCategoryID", reflect.TypeOf((*MockItemRepository)(nil).GetCategoryID), ctx, categoryName)
 }
 
+// GetCategoryName mocks base method.
+func (m *MockItemRepository) GetCategoryName(ctx context.Context, categoryID int) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCategoryName", ctx, categoryID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCategoryName indicates an expected call of GetCategoryName.
+func (mr *MockItemRepositoryMockRecorder) GetCategoryName(ctx, categoryID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCategoryName", reflect.TypeOf((*MockItemRepository)(nil).GetCategoryName), ctx, categoryID)
+}
+
 // Insert mocks base method.
 func (m *MockItemRepository) Insert(ctx context.Context, item *Item) error {
 	m.ctrl.T.Helper()

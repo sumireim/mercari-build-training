@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	//"context"
 )
 
 type Server struct {
@@ -86,6 +87,7 @@ func (s *Handlers) Hello(w http.ResponseWriter, r *http.Request) {
 type AddItemRequest struct {
 	Name     string `form:"name"`
 	Category string `form:"category"` // Category of the item
+	//CategoryID int    `json:"category_id"`
 	Image    []byte `form:"image"`    // Image data in bytes
 }
 
@@ -93,6 +95,7 @@ type AddItemResponse struct {
 	Message string `json:"message"`
 }
 
+// parseAddItemRequest parses and validates the request to add an item.
 func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 	var req = &AddItemRequest{}
 	
@@ -105,7 +108,7 @@ func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 	// set form values
 	req.Name = r.FormValue("name")
 	req.Category = r.FormValue("category")
-	
+
 	// read image
 	if imagePath := r.FormValue("image"); imagePath != "" {
 		// test case
@@ -157,16 +160,16 @@ func (s *Handlers) AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get category ID from category name
-	categoryID, err := s.itemRepo.GetCategoryID(ctx, req.Category)
+	/*categoryID, err := s.itemRepo.GetCategoryID(ctx, req.Category)
 	if err != nil {
 		slog.Error("failed to get category id: ", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
-	}
+	}*/
 
 	item := &Item{
 		Name:       req.Name,
-		CategoryID: categoryID,
+		Category: req.Category,
 		ImageName:  fileName,
 	}
 
@@ -448,3 +451,23 @@ func (s *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 } 
+
+
+// getCategoryNameFromID gets the category name for a given category id
+/*func getCategoryNameFromID(ctx context.Context, itemRepo ItemRepository, categoryID int) (string, error) {
+	categoryName, err := itemRepo.GetCategoryName(ctx, categoryID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get category name: %w", err)
+	}
+	return categoryName, nil
+}
+
+// getCategoryID gets the category id for a given category name
+func getCategoryID(ctx context.Context, itemRepo ItemRepository, categoryName string) (int, error) {
+	categoryID, err := itemRepo.GetCategoryID(ctx, categoryName)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get category id: %w", err)
+	}
+	return categoryID, nil
+}*/
+
