@@ -106,8 +106,14 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
         return errInvalidInput
     }
 
+    //get category id
+    categoryID, err := i.GetCategoryID(ctx, item.Category)
+    if err != nil {
+        return fmt.Errorf("failed to get category id: %w", err)
+    }
+
     stmt, err := i.db.PrepareContext(ctx, `
-        INSERT INTO items (name, category, image_name)
+        INSERT INTO items (name, category_id, image_name)
         VALUES (?, ?, ?)
     `)
     if err != nil {
@@ -115,7 +121,7 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
     }
     defer stmt.Close()
 
-    result, err := stmt.ExecContext(ctx, item.Name, item.Category, item.ImageName)
+    result, err := stmt.ExecContext(ctx, item.Name, categoryID, item.ImageName)
     if err != nil {
         return fmt.Errorf("failed to insert item: %w", err)
     }
@@ -132,7 +138,7 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
 // List returns all items from the repository.
 func (i *itemRepository) List(ctx context.Context) ([]Item, error) {
     return i.queryItems(ctx, `
-        SELECT i.id, i.name, i.category, i.image_name 
+        SELECT i.id, i.name, c.name AS category, i.image_name 
         FROM items i 
         JOIN categories c ON i.category_id = c.id
     `)

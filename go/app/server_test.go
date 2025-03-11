@@ -8,11 +8,11 @@ import (
 	"testing"
 	"os"
 	"github.com/google/go-cmp/cmp"
-	//"go.uber.org/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"encoding/json"
-	//"errors"
+	"errors"
 	_ "github.com/mattn/go-sqlite3"
-	//"database/sql"
+	"database/sql"
 	//"log"
 )
 
@@ -128,7 +128,7 @@ func TestHelloHandler(t *testing.T) {
 	}
 }
 
-/*func TestAddItem(t *testing.T) {
+func TestAddItem(t *testing.T) {
 	t.Parallel()
 
 	type wants struct {
@@ -146,19 +146,11 @@ func TestHelloHandler(t *testing.T) {
 			},
 			injector: func(m *MockItemRepository) {
 				// STEP 6-3: define mock expectation
-				item := Item{
-					Name:       "used iPhone 16e",
-					Category:   "phone",
-					//CategoryID: 1,
-					//ImageName:  "some-image-hash.jpg",
-				}
+				m.EXPECT().GetCategoryID(gomock.Any(), "phone").Return(1, nil)
 				m.EXPECT().Insert(gomock.Any(), gomock.Any()).Return(nil)
-				//m.EXPECT().GetCategoryID(gomock.Any(), gomock.Any()).Return(1, nil)
-				m.EXPECT().GetCategoryID(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx, categoryName any) (int, error) {
-					log.Println("GetCategoryID called with:", categoryName) // ここで呼び出し時のログを確認
-					return 1, nil
-				})
-				m.EXPECT().List(gomock.Any()).Return([]Item{item}, nil)
+				m.EXPECT().List(gomock.Any()).Return([]Item{
+					{Name: "used iPhone 16e", Category: "phone"},
+				}, nil)
 				// succeeded to insert
 			},
 			wants: wants{
@@ -172,8 +164,8 @@ func TestHelloHandler(t *testing.T) {
 			},
 			injector: func(m *MockItemRepository) {
 				// STEP 6-3: define mock expectation
+				m.EXPECT().GetCategoryID(gomock.Any(), "phone").Return(1, nil)
 				m.EXPECT().Insert(gomock.Any(), gomock.Any()).Return(errors.New("failed to insert"))
-				m.EXPECT().GetCategoryID(gomock.Any(), gomock.Any()).Return(1, nil)
 				// failed to insert
 			},
 			wants: wants{
@@ -216,10 +208,10 @@ func TestHelloHandler(t *testing.T) {
 			}
 		})
 	}
-}*/
+}
 
 // STEP 6-4: uncomment this test
-/*func TestAddItemE2e(t *testing.T) {
+func TestAddItemE2e(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping e2e test")
 	}
@@ -289,6 +281,8 @@ func TestHelloHandler(t *testing.T) {
 
 			// STEP 6-4: check inserted data
 			var items []Item
+			var category_id int
+
 			rows, err := db.Query(`
 				SELECT i.id, i.name, i.category_id, i.image_name 
 				FROM items i
@@ -302,7 +296,7 @@ func TestHelloHandler(t *testing.T) {
 
 			for rows.Next() {
 				var item Item
-				if err := rows.Scan(&item.ID, &item.Name, &item.CategoryID, &item.ImageName); err != nil {
+				if err := rows.Scan(&item.ID, &item.Name, &category_id, &item.ImageName); err != nil {
 					t.Fatalf("failed to scan item: %v", err)
 				}
 				items = append(items, item)
@@ -385,4 +379,4 @@ func setupDB(t *testing.T) (db *sql.DB, closers []func(), e error) {
 		return nil, nil, err
 	}
 	return db, closers, nil
-}*/
+}
