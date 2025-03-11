@@ -187,7 +187,17 @@ func (i *itemRepository) GetCategoryID(ctx context.Context, categoryName string)
 	var id int
 	err := i.db.QueryRowContext(ctx, "SELECT id FROM categories WHERE name = ?", categoryName).Scan(&id)
 	if err == sql.ErrNoRows {
-		return 0, fmt.Errorf("category not found: %s", categoryName)
+		// insert a new category if not found
+        result, insertErr := i.db.ExecContext(ctx, "INSERT INTO categories (name) VALUES (?)", categoryName)
+        if insertErr != nil {
+            return 0, fmt.Errorf("failed to create new category: %w", insertErr)
+        }
+        // get the new category id
+        newID, idErr := result.LastInsertId()
+        if idErr != nil {
+            return 0, fmt.Errorf("failed to get new category id: %w", idErr)
+        }
+        return int(newID), nil
 	}
 	if err != nil {
 		return 0, fmt.Errorf("failed to get category id: %w", err)
