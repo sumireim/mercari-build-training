@@ -14,6 +14,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"database/sql"
 	//"log"
+	"context"
+	
 )
 
 func TestParseAddItemRequest(t *testing.T) {
@@ -44,7 +46,6 @@ func TestParseAddItemRequest(t *testing.T) {
 				req: &AddItemRequest{
 					Name:     "jaket_test",
 					Category: "fashion_test",
-					//CategoryID: 1,
 					Image:    imageBytes,
 				},
 				err: false,
@@ -146,11 +147,22 @@ func TestAddItem(t *testing.T) {
 			},
 			injector: func(m *MockItemRepository) {
 				// STEP 6-3: define mock expectation
-				m.EXPECT().GetCategoryID(gomock.Any(), "phone").Return(1, nil)
-				m.EXPECT().Insert(gomock.Any(), gomock.Any()).Return(nil)
-				m.EXPECT().List(gomock.Any()).Return([]Item{
-					{Name: "used iPhone 16e", Category: "phone"},
-				}, nil)
+                m.EXPECT().
+                    GetCategoryID(gomock.Any(), "phone").
+                    Return(1, nil)
+
+                m.EXPECT().
+                    Insert(gomock.Any(), gomock.Any()).
+                    DoAndReturn(func(ctx context.Context, item *Item) error {
+                        // check the inserted item
+                        if item.Name != "used iPhone 16e" || item.Category != "phone" {
+                            return errors.New("invalid item")
+                        }
+                        return nil
+                    })
+                m.EXPECT().List(gomock.Any()).Return([]Item{
+                    {Name: "used iPhone 16e", Category: "phone"},
+                }, nil)
 				// succeeded to insert
 			},
 			wants: wants{
@@ -164,8 +176,13 @@ func TestAddItem(t *testing.T) {
 			},
 			injector: func(m *MockItemRepository) {
 				// STEP 6-3: define mock expectation
-				m.EXPECT().GetCategoryID(gomock.Any(), "phone").Return(1, nil)
-				m.EXPECT().Insert(gomock.Any(), gomock.Any()).Return(errors.New("failed to insert"))
+				m.EXPECT().
+                    GetCategoryID(gomock.Any(), "phone").
+                    Return(1, nil)
+
+                m.EXPECT().
+                    Insert(gomock.Any(), gomock.Any()).
+                    Return(errors.New("failed to insert"))
 				// failed to insert
 			},
 			wants: wants{
