@@ -34,8 +34,13 @@ export const ItemList = ({ reload, onLoadCompleted }: Prop) => {
         return (
           <div key={item.id} className="ItemList">
             {/* TODO: Task 2: Show item images */}
-            <img src={PLACEHOLDER_IMAGE} />
+            <img 
+              src={`http://localhost:9000/images/${item.image_name}`} 
+              alt={item.name}
+              onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE; }} 
+            />
             <p>
+              <span>ID: {item.id}</span><br />  {/* デバッグ用 */}
               <span>Name: {item.name}</span>
               <br />
               <span>Category: {item.category}</span>
@@ -46,3 +51,7 @@ export const ItemList = ({ reload, onLoadCompleted }: Prop) => {
     </div>
   );
 };
+
+
+
+
