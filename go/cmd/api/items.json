@@ -1,0 +1,34 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "jacket",
+      "category": "fashion",
+      "image_name": "b3b430a54e49f8adbab5f37267c4332bbf72787b9856598a2f0d83c81fb9a582.jpg"
+    },
+    {
+      "id": 2,
+      "name": "jacket",
+      "category": "fashion",
+      "image_name": "b3b430a54e49f8adbab5f37267c4332bbf72787b9856598a2f0d83c81fb9a582.jpg"
+    },
+    {
+      "id": 3,
+      "name": "jacket",
+      "category": "fashion",
+      "image_name": "b3b430a54e49f8adbab5f37267c4332bbf72787b9856598a2f0d83c81fb9a582.jpg"
+    },
+    {
+      "id": 4,
+      "name": "jacket",
+      "category": "fashion",
+      "image_name": "b3b430a54e49f8adbab5f37267c4332bbf72787b9856598a2f0d83c81fb9a582.jpg"
+    },
+    {
+      "id": 5,
+      "name": "jacket",
+      "category": "fashion",
+      "image_name": "b3b430a54e49f8adbab5f37267c4332bbf72787b9856598a2f0d83c81fb9a582.jpg"
+    }
+  ]
+}
