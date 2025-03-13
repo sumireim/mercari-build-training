@@ -1,18 +1,18 @@
 package app
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"context"
-	"io"
 )
 
 type Server struct {
@@ -98,7 +98,7 @@ type AddItemResponse struct {
 // parseAddItemRequest parses and validates the request to add an item.
 func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 	var req = &AddItemRequest{}
-	
+
 	// Check if it's multipart/form-data
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
 		err := r.ParseMultipartForm(32 << 20) // 32MB max memory
@@ -141,7 +141,7 @@ func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse form: %w", err)
 		}
-		
+
 		// set form values
 		req.Name = r.FormValue("name")
 		req.Category = r.FormValue("category")
@@ -151,7 +151,7 @@ func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 			if !strings.HasSuffix(strings.ToLower(imagePath), ".jpg") {
 				return nil, errors.New("only .jpg files are allowed")
 			}
-	
+
 			imageData, err := os.ReadFile(imagePath)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read image file: %w", err)
@@ -160,9 +160,9 @@ func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 				return nil, errors.New("image data is empty")
 			}
 			req.Image = imageData
-		} 
+		}
 	}
-	slog.Debug("parseAddItemRequest", "name", req.Name, "category", req.Category, "image_len", len(req.Image)) 
+	slog.Debug("parseAddItemRequest", "name", req.Name, "category", req.Category, "image_len", len(req.Image))
 	// Validate the request (these checks should be done regardless of Content-Type)
 	if req.Name == "" {
 		return nil, errors.New("name is required")
@@ -185,14 +185,14 @@ func (s *Handlers) AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 	//get category id
 	/*_, err = s.itemRepo.GetCategoryID(ctx, req.Category)
-    if err != nil {
-        slog.Error("ailed to get category id", "error", err)
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }*/
+	  if err != nil {
+	      slog.Error("ailed to get category id", "error", err)
+	      http.Error(w, err.Error(), http.StatusInternalServerError)
+	      return
+	  }*/
 	// set default image name
-	fileName := "default.jpg" 
-	if len(req.Image) > 0 {     
+	fileName := "default.jpg"
+	if len(req.Image) > 0 {
 		fileName, err = s.storeImage(req.Image)
 		if err != nil {
 			slog.Error("failed to store image: ", "error", err)
@@ -202,9 +202,9 @@ func (s *Handlers) AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := &Item{
-		Name:       req.Name,
-		Category: req.Category,
-		ImageName:  fileName,
+		Name:      req.Name,
+		Category:  req.Category,
+		ImageName: fileName,
 	}
 
 	err = s.itemRepo.Insert(ctx, item)
@@ -429,7 +429,7 @@ type SearchItemsRequest struct {
 
 // response format for search items
 type SearchItemsResponse struct {
-    Items []GetItemDetailResponse `json:"items"`
+	Items []GetItemDetailResponse `json:"items"`
 }
 
 // get the keyword from the request
@@ -438,7 +438,7 @@ func parseSearchItemsRequest(r *http.Request) (*SearchItemsRequest, error) {
 	if keyword == "" {
 		return nil, errors.New("keyword is required")
 	}
-	
+
 	return &SearchItemsRequest{
 		Keyword: keyword,
 	}, nil
@@ -447,14 +447,14 @@ func parseSearchItemsRequest(r *http.Request) (*SearchItemsRequest, error) {
 // Search returns a list of items containing the given keyword
 func (s *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	
+
 	req, err := parseSearchItemsRequest(r)
 	if err != nil {
 		slog.Warn("failed to parse search items request: ", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	// search items containing the given keyword
 	items, err := s.itemRepo.Search(ctx, req.Keyword)
 	if err != nil {
@@ -462,7 +462,7 @@ func (s *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	// convert items to response format
 	var respItems []GetItemDetailResponse
 	for _, item := range items {
@@ -472,18 +472,18 @@ func (s *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 			ImageName: item.ImageName,
 		})
 	}
-	
+
 	// return the list of items containing the given keyword
 	resp := SearchItemsResponse{
-        Items: respItems,
-    }
-	
+		Items: respItems,
+	}
+
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-} 
+}
 
 // getCategoryID gets the category id for a given category name
 func getCategoryID(ctx context.Context, itemRepo ItemRepository, categoryName string) (int, error) {
@@ -493,4 +493,3 @@ func getCategoryID(ctx context.Context, itemRepo ItemRepository, categoryName st
 	}
 	return categoryID, nil
 }
-

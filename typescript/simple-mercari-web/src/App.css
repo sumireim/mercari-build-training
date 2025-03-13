@@ -143,10 +143,11 @@ html, body, #root {
   width: 100%;
   display: grid;
   grid-template-columns: repeat(4, 1fr); 
+  grid-template-rows: 1fr;
   gap: var(--spacing-lg); 
   margin: var(--spacing-xl) auto; 
   box-sizing: border-box;
-  grid-auto-rows: 1fr; 
+  /*grid-auto-rows: 1fr; */
   align-items: stretch; 
 }
 
@@ -175,7 +176,7 @@ html, body, #root {
 }
 
 .ItemList img {
-  width: 100%;
+  width: 230px;
   height: 180px;
   object-fit: cover;
   border-radius: var(--border-radius);
