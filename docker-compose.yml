@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  api:
+    image: build2025/app:latest
+    ports:
+      - "9000:9000"
+    environment:
+      - PORT=9000
+      - FRONT_URL=http://localhost:3000
+    volumes:
+      - api_data:/app/db
+      - api_images:/app/images
+
+  web:
+    image: build2025/web:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:9000
+    depends_on:
+      - api
+
+volumes:
+  api_data:
+  api_images:
