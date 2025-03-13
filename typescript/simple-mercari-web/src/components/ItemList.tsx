@@ -51,7 +51,3 @@ export const ItemList = ({ reload, onLoadCompleted }: Prop) => {
     </div>
   );
 };
-
-
-
-
