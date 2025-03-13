@@ -184,12 +184,12 @@ func (s *Handlers) AddItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//get category id
-	_, err = s.itemRepo.GetCategoryID(ctx, req.Category)
+	/*_, err = s.itemRepo.GetCategoryID(ctx, req.Category)
     if err != nil {
         slog.Error("ailed to get category id", "error", err)
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
-    }
+    }*/
 	// set default image name
 	fileName := "default.jpg" 
 	if len(req.Image) > 0 {     

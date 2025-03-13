@@ -13,14 +13,11 @@ function App() {
           <b>Simple Mercari</b>
         </p>
       </header>
-      <div>
+      <div className="ListingContainer">
         <Listing onListingCompleted={() => setReload(true)} />
       </div>
-      <div>
-        <ItemList reload={reload} onLoadCompleted={() => setReload(false)} />
-      </div>
+      <ItemList reload={reload} onLoadCompleted={() => setReload(false)} />
     </div>
   );
 }
-
 export default App;
