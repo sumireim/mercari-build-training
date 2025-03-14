@@ -1,0 +1,35 @@
+version: "3.9"
+services:
+  api:
+    build: 
+      context: ./go
+      dockerfile: Dockerfile
+    container_name: app-container
+    ports:
+      - "9000:9000"
+    environment:
+      - PORT=9000
+      - FRONT_URL=http://localhost:3000
+    volumes:
+      - ./go/db:/app/db
+      - ./go/images:/app/images
+    networks:
+      - app-network
+
+  web:
+    build: 
+      context: ./typescript/simple-mercari-web
+      dockerfile: Dockerfile
+    container_name: web-container
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:9000
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
