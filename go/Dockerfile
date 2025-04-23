@@ -10,7 +10,7 @@ RUN go mod download
 COPY . .
 
 RUN addgroup -S mercari && adduser -S trainee -G mercari
-RUN chown -R trainee:mercari ./db
+RUN chown -R trainee:mercari ./images ./db
 
 USER trainee
 

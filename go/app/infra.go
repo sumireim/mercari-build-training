@@ -67,6 +67,17 @@ func NewItemRepository() (ItemRepository, error) {
         return nil, fmt.Errorf("failed to ping database: %w", err)
     }
 
+    sqlBytes, err := os.ReadFile("db/items.sql")
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to read items.sql: %w", err)
+	}
+	_, err = db.Exec(string(sqlBytes))
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to execute items.sql: %w", err)
+	}
+
 	return &itemRepository{
 		db: db,
 	}, nil
